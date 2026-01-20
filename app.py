@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 
 # 1. Configuração da página
-st.set_page_config(page_title="HidroCE - Cálculo de Vazão", layout="wide")
+st.set_page_config(page_title="Calculadora de Vazão - Cagece", layout="wide")
 
 # 2. Carregamento dos dados
 @st.cache_data
@@ -15,11 +15,9 @@ def carregar_dados():
 
 df = carregar_dados()
 
-# 3. Cabeçalho com Logo da Cagece
-# Inserindo a logo centralizada e removendo o emoji de onda
-col_logo, col_tit = st.columns([1, 4])
-with col_logo:
-    st.image("https://www.cagece.com.br/wp-content/themes/cagece2019/assets/img/logo-cagece.png", width=150)
+# 3. Cabeçalho com a Logo Atualizada da Cagece
+# Usando a imagem que você enviou
+st.image("https://www.cagece.com.br/wp-content/themes/cagece2019/assets/img/logo-cagece.png", width=250)
 
 st.title("Calculadora de Vazão - Estado do Ceará")
 st.markdown("### Método Racional com Equações IDF (Batista, 2018)")
@@ -28,7 +26,7 @@ if df is not None:
     # 4. Barra Lateral de Parâmetros
     with st.sidebar:
         st.header("⚙️ Parâmetros")
-        # Variável correta para evitar o erro anterior
+        # Correção da variável 'cidade' para evitar erros de cálculo
         cidade = st.selectbox("1. Município:", sorted(df['municipio'].unique()))
         area = st.number_input("2. Área da Bacia (ha):", min_value=0.0, step=0.1)
         c_esc = st.number_input("3. Coeficiente C:", min_value=0.0, max_value=1.0, step=0.01)
@@ -51,24 +49,31 @@ if df is not None:
         # 6. Exibição dos Resultados
         st.divider()
         c1, c2, c3 = st.columns(3)
-        c1.metric("Intensidade (i)", f"{i_hora:.2f} mm/h")
-        c2.metric("Vazão de Pico (Q)", f"{q_m3s:.4f} m³/s")
-        c3.metric("Vazão em Litros", f"{q_ls:.2f} L/s")
+        
+        with c1:
+            st.metric("Intensidade (i)", f"{i_hora:.2f} mm/h")
+        with c2:
+            st.metric("Vazão de Pico (Q)", f"{q_m3s:.4f} m³/s")
+        with c3:
+            st.metric("Vazão em Litros", f"{q_ls:.2f} L/s")
 
         # Seção de Memória de Cálculo
-        with st.expander("📄 Ver Detalhes do Cálculo"):
+        with st.expander("📄 Ver Detalhes e Memória de Cálculo"):
             st.write(f"**Município Selecionado:** {cidade}")
-            st.write(f"**Parâmetros IDF:** K={p['K']}, a={p['a']}, b={p['b']}, c={p['c']}")
+            st.write(f"**Parâmetros IDF (Trabalho UFC):** K={p['K']}, a={p['a']}, b={p['b']}, c={p['c']}")
             st.latex(r"Q = \frac{C \cdot i \cdot A}{360}")
-            st.info(f"Cálculo concluído para {cidade} com TR de {tr} anos.")
+            st.info(f"Cálculo processado com sucesso para a área de {area} hectares.")
 
-        # Gráfico IDF
+        # Gráfico da Curva IDF
         st.subheader(f"📊 Curva IDF - {cidade}")
         minutos = list(range(5, 121, 5))
         intensidades = [(p['K'] * (tr ** p['a'])) / ((m + p['b']) ** p['c']) * 60 for m in minutos]
-        st.line_chart(pd.DataFrame({"Duração (min)": minutos, "i (mm/h)": intensidades}).set_index("Duração (min)"))
+        dados_grafico = pd.DataFrame({"Duração (min)": minutos, "i (mm/h)": intensidades})
+        st.line_chart(dados_grafico.set_index("Duração (min)"))
+        
     else:
-        st.warning("⚠️ Ajuste a **Área** e o **Coeficiente C** para ver o resultado.")
+        st.warning("⚠️ Ajuste a **Área** e o **Coeficiente C** na barra lateral para calcular.")
 
+# Rodapé institucional
 st.markdown("---")
-st.caption("Desenvolvido para uso técnico com base na Dissertação de Mestrado (UFC/2018).")
+st.caption("Ferramenta técnica desenvolvida com base na Dissertação de Mestrado de Tatiane Lima Batista (UFC/2018).")
